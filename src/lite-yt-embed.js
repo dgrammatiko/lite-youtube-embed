@@ -10,7 +10,7 @@
  *   https://github.com/Daugilas/lazyYT
  *   https://github.com/vb/lazyframe
  */
-class LiteYTEmbed extends HTMLElement {
+export class LiteYTEmbed extends HTMLElement {
     constructor() {
         super();
 
@@ -34,18 +34,35 @@ class LiteYTEmbed extends HTMLElement {
          *       - When doing this, apply referrerpolicy (https://github.com/ampproject/amphtml/pull/3940)
          * TODO: Consider using webp if supported, falling back to jpg
          */
-        this.posterUrl = `https://i.ytimg.com/vi/${this.videoId}/hqdefault.jpg`;
+        this.width = window.innerWidth;
+        // if (this.width > 1600) {
+        //     this.poster = 'maxresdefault.jpg';
+        // } else 
+        if (this.width > 700) { 
+            this.poster = 'mqdefault.jpg';
+        } else {
+            this.poster = 'default.jpg';
+        }
+
+        this.posterUrl = `https://i.ytimg.com/vi/${this.videoId}/${this.poster}`;
         // Warm the connection for the poster image
         LiteYTEmbed.addPrefetch('preload', this.posterUrl, 'image');
-        // TODO: support dynamically setting the attribute via attributeChangedCallback
+
+        this.playLabel = this.getAttribute('playlabel') ? encodeURIComponent(this.getAttribute('playlabel')) : 'Play';
     }
 
     connectedCallback() {
         this.style.backgroundImage = `url("${this.posterUrl}")`;
 
-        const playBtn = document.createElement('div');
-        playBtn.classList.add('lty-playbtn');
-        this.append(playBtn);
+        let playBtn = this.querySelector('.lty-playbtn');
+
+         if (!playBtn) {
+             playBtn = document.createElement('button');
+             playBtn.type = 'button';
+             playBtn.classList.add('lty-playbtn');
+             playBtn.title = decodeURIComponent(this.playLabel);
+             this.append(playBtn);
+         }
 
         // On hover (or tap), warm up the TCP connections we're (likely) about to use.
         this.addEventListener('pointerover', LiteYTEmbed.warmConnections, {once: true});
@@ -55,10 +72,6 @@ class LiteYTEmbed extends HTMLElement {
         //   We'd want to only do this for in-viewport or near-viewport ones: https://github.com/ampproject/amphtml/pull/5003
         this.addEventListener('click', e => this.addIframe());
     }
-
-    // // TODO: Support the the user changing the [videoid] attribute
-    // attributeChangedCallback() {
-    // }
 
     /**
      * Add a <link rel={preload | preconnect} ...> to the head
@@ -70,7 +83,7 @@ class LiteYTEmbed extends HTMLElement {
         if (as) {
             linkElem.as = as;
         }
-        linkElem.crossorigin = true;
+        linkElem.crossOrigin = 'anonymous';
         document.head.append(linkElem);
     }
 
@@ -108,5 +121,3 @@ class LiteYTEmbed extends HTMLElement {
         this.classList.add('lyt-activated');
     }
 }
-// Register custome element
-customElements.define('lite-youtube', LiteYTEmbed);
